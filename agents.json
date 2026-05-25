@@ -2,8 +2,13 @@
   {
     "id": "taizi",
     "name": "taizi",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-taizi",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\taizi\\agent",
+    "workspace": "/home/wjf/.openclaw/workspace-taizi",
+    "agentDir": "/home/wjf/.openclaw/agents/taizi/agent",
+    "backend": {
+      "type": "openai",
+      "endpoint": "http://localhost:8080/v1/chat/completions",
+      "model": "qwen2.5-7b-q4.gguf"
+    },
     "subagents": {
       "allowAgents": ["zhongshu"]
     }
@@ -11,8 +16,13 @@
   {
     "id": "zhongshu",
     "name": "zhongshu",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-zhongshu",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\zhongshu\\agent",
+    "workspace": "/home/wjf/.openclaw/workspace-zhongshu",
+    "agentDir": "/home/wjf/.openclaw/agents/zhongshu/agent",
+    "backend": {
+      "type": "openai",
+      "endpoint": "https://aiapi.meccy.top/v1/chat/completions",
+      "model": "claude-sonnet-4-6"
+    },
     "subagents": {
       "allowAgents": ["menxia", "shangshu"]
     }
@@ -20,8 +30,13 @@
   {
     "id": "menxia",
     "name": "menxia",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-menxia",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\menxia\\agent",
+    "workspace": "/home/wjf/.openclaw/workspace-menxia",
+    "agentDir": "/home/wjf/.openclaw/agents/menxia/agent",
+    "backend": {
+      "type": "openai",
+      "endpoint": "https://aiapi.meccy.top/v1/chat/completions",
+      "model": "claude-sonnet-4-6"
+    },
     "subagents": {
       "allowAgents": ["shangshu", "zhongshu"]
     }
@@ -29,8 +44,12 @@
   {
     "id": "shangshu",
     "name": "shangshu",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-shangshu",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\shangshu\\agent",
+    "workspace": "/home/wjf/.openclaw/workspace-shangshu",
+    "agentDir": "/home/wjf/.openclaw/agents/shangshu/agent",
+    "backend": {
+      "type": "openclaw",
+      "timeout": 180
+    },
     "subagents": {
       "allowAgents": ["zhongshu", "menxia", "hubu", "libu", "bingbu", "xingbu", "gongbu", "libu_hr"]
     }
@@ -38,8 +57,18 @@
   {
     "id": "hubu",
     "name": "hubu",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-hubu",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\hubu\\agent",
+    "workspace": "/home/wjf/.openclaw/workspace-hubu",
+    "agentDir": "/home/wjf/.openclaw/agents/hubu/agent",
+    "backend": {
+      "type": "claude_code",
+      "endpoint": "claude-meccy",
+      "model": "sonnet",
+      "timeout": 300,
+      "extra": {
+        "max_turns": 20,
+        "task_type": "coding"
+      }
+    },
     "subagents": {
       "allowAgents": ["shangshu"]
     }
@@ -47,8 +76,18 @@
   {
     "id": "libu",
     "name": "libu",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-libu",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\libu\\agent",
+    "workspace": "/home/wjf/.openclaw/workspace-libu",
+    "agentDir": "/home/wjf/.openclaw/agents/libu/agent",
+    "backend": {
+      "type": "claude_code",
+      "endpoint": "claude-meccy",
+      "model": "sonnet",
+      "timeout": 300,
+      "extra": {
+        "max_turns": 20,
+        "task_type": "coding"
+      }
+    },
     "subagents": {
       "allowAgents": ["shangshu"]
     }
@@ -56,8 +95,18 @@
   {
     "id": "bingbu",
     "name": "bingbu",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-bingbu",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\bingbu\\agent",
+    "workspace": "/home/wjf/.openclaw/workspace-bingbu",
+    "agentDir": "/home/wjf/.openclaw/agents/bingbu/agent",
+    "backend": {
+      "type": "claude_code",
+      "endpoint": "claude-meccy",
+      "model": "sonnet",
+      "timeout": 300,
+      "extra": {
+        "max_turns": 20,
+        "task_type": "coding"
+      }
+    },
     "subagents": {
       "allowAgents": ["shangshu"]
     }
@@ -65,8 +114,18 @@
   {
     "id": "xingbu",
     "name": "xingbu",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-xingbu",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\xingbu\\agent",
+    "workspace": "/home/wjf/.openclaw/workspace-xingbu",
+    "agentDir": "/home/wjf/.openclaw/agents/xingbu/agent",
+    "backend": {
+      "type": "claude_code",
+      "endpoint": "claude-meccy",
+      "model": "sonnet",
+      "timeout": 300,
+      "extra": {
+        "max_turns": 20,
+        "task_type": "review"
+      }
+    },
     "subagents": {
       "allowAgents": ["shangshu"]
     }
@@ -74,8 +133,18 @@
   {
     "id": "gongbu",
     "name": "gongbu",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-gongbu",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\gongbu\\agent",
+    "workspace": "/home/wjf/.openclaw/workspace-gongbu",
+    "agentDir": "/home/wjf/.openclaw/agents/gongbu/agent",
+    "backend": {
+      "type": "claude_code",
+      "endpoint": "claude-meccy",
+      "model": "sonnet",
+      "timeout": 300,
+      "extra": {
+        "max_turns": 20,
+        "task_type": "coding"
+      }
+    },
     "subagents": {
       "allowAgents": ["shangshu"]
     }
@@ -83,8 +152,13 @@
   {
     "id": "libu_hr",
     "name": "libu_hr",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-libu_hr",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\libu_hr\\agent",
+    "workspace": "/home/wjf/.openclaw/workspace-libu_hr",
+    "agentDir": "/home/wjf/.openclaw/agents/libu_hr/agent",
+    "backend": {
+      "type": "openai",
+      "endpoint": "http://localhost:8080/v1/chat/completions",
+      "model": "qwen2.5-7b-q4.gguf"
+    },
     "subagents": {
       "allowAgents": ["shangshu"]
     }
@@ -92,8 +166,13 @@
   {
     "id": "zaochao",
     "name": "zaochao",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-zaochao",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\zaochao\\agent",
+    "workspace": "/home/wjf/.openclaw/workspace-zaochao",
+    "agentDir": "/home/wjf/.openclaw/agents/zaochao/agent",
+    "backend": {
+      "type": "openai",
+      "endpoint": "http://localhost:8080/v1/chat/completions",
+      "model": "qwen2.5-7b-q4.gguf"
+    },
     "subagents": {
       "allowAgents": []
     }

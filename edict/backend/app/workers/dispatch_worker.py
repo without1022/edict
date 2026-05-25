@@ -26,6 +26,7 @@ import uuid
 from datetime import datetime, timezone
 
 from ..config import get_settings
+from ..adapters.registry import get_adapter, init_registry, get_registry_snapshot
 from ..services.event_bus import (
     EventBus,
     TOPIC_TASK_DISPATCH,
@@ -326,6 +327,8 @@ class DispatchWorker:
         self._inflight: set[str] = set()
         # 执行时间记录（仅用于监控告警）
         self._durations: dict[str, list[float]] = {}
+        # 适配器注册表是否已初始化
+        self._registry_initialized = False
 
     def _get_bucket(self, agent_id: str) -> asyncio.Semaphore:
         """根据 agent 类型返回对应桶的信号量。"""
@@ -337,6 +340,13 @@ class DispatchWorker:
     async def start(self):
         await self.bus.connect()
         await self.bus.ensure_consumer_group(TOPIC_TASK_DISPATCH, GROUP)
+
+        # 初始化适配器注册表
+        if not self._registry_initialized:
+            count = await init_registry()
+            self._registry_initialized = True
+            log.info(f"🔌 Agent registry ready: {count} adapters loaded")
+
         self._running = True
         log.info("🚀 Dispatch worker started")
 
@@ -426,7 +436,7 @@ class DispatchWorker:
 
             try:
                 start_time = time.monotonic()
-                result = await self._call_openclaw(agent, enriched_message, task_id, trace_id, payload)
+                result = await self._call_agent(agent, enriched_message, task_id, trace_id, payload)
                 elapsed = time.monotonic() - start_time
 
                 # 记录执行时间（仅用于监控和告警）
@@ -539,7 +549,7 @@ class DispatchWorker:
             finally:
                 self._inflight.discard(task_id)
 
-    async def _call_openclaw(
+    async def _call_agent(
         self,
         agent: str,
         message: str,
@@ -547,7 +557,42 @@ class DispatchWorker:
         trace_id: str,
         payload: dict | None = None,
     ) -> dict:
-        """异步调用 OpenClaw CLI — 在线程池中执行，带富上下文注入。"""
+        """通过适配器注册表调用 agent — 支持多种后端（OpenClaw / Claude Code / OpenAI 兼容）。"""
+        adapter = await get_adapter(agent)
+        if adapter is None:
+            log.warning(f"No adapter found for agent '{agent}', falling back to OpenClaw CLI")
+            return await self._call_openclaw_fallback(agent, message, task_id, trace_id, payload)
+
+        context = {
+            "task_id": task_id,
+            "trace_id": trace_id,
+            "title": (payload or {}).get("title", ""),
+            "description": (payload or {}).get("description", ""),
+            "state": (payload or {}).get("state", ""),
+            "org": (payload or {}).get("org", ""),
+            "priority": (payload or {}).get("priority", "中"),
+            "tags": (payload or {}).get("tags", []),
+        }
+
+        log.info(f"[{agent}] → Adapter: {adapter}")
+        adapter_result = await adapter.run(agent, message, context)
+
+        return {
+            "returncode": adapter_result.returncode,
+            "stdout": adapter_result.stdout,
+            "stderr": adapter_result.stderr,
+            "metadata": adapter_result.metadata,
+        }
+
+    async def _call_openclaw_fallback(
+        self,
+        agent: str,
+        message: str,
+        task_id: str,
+        trace_id: str,
+        payload: dict | None = None,
+    ) -> dict:
+        """回退 — 直接调用 OpenClaw CLI（向后兼容）。"""
         settings = get_settings()
         cmd = [
             settings.openclaw_bin,
@@ -561,7 +606,6 @@ class DispatchWorker:
         env["EDICT_TRACE_ID"] = trace_id
         env["EDICT_API_URL"] = f"http://localhost:{settings.port}"
 
-        # 注入额外上下文环境变量
         if payload:
             env["EDICT_TASK_TITLE"] = payload.get("title", "")
             env["EDICT_TASK_STATE"] = payload.get("state", "")
@@ -571,7 +615,6 @@ class DispatchWorker:
             if tags:
                 env["EDICT_TASK_TAGS"] = ",".join(str(t) for t in tags)
 
-        # 写入临时上下文文件（大型上下文通过文件传递，避免命令行参数过长）
         context_file = None
         if payload:
             context_data = {
@@ -619,7 +662,6 @@ class DispatchWorker:
             except FileNotFoundError:
                 return {"returncode": -1, "stdout": "", "stderr": "openclaw command not found"}
             finally:
-                # 清理临时上下文文件
                 if context_file:
                     try:
                         os.unlink(context_file)

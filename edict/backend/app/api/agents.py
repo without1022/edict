@@ -6,11 +6,14 @@ from pathlib import Path
 
 from fastapi import APIRouter
 
+from ..adapters.registry import resolve_agent_backend
+
 log = logging.getLogger("edict.api.agents")
 router = APIRouter()
 
 # Agent 元信息（对应 agents/ 目录下的 SOUL.md）
 AGENT_META = {
+    "taizi": {"name": "太子（皇上代理）", "role": "消息分拣与旨意传达", "icon": "👑"},
     "zaochao": {"name": "早朝（朝会主持）", "role": "朝会召集与议程管理", "icon": "🏛️"},
     "shangshu": {"name": "尚书令", "role": "总协调与任务监督", "icon": "📜"},
     "zhongshu": {"name": "中书省", "role": "起草诏令与方案规划", "icon": "✍️"},
@@ -20,17 +23,20 @@ AGENT_META = {
     "gongbu": {"name": "工部", "role": "工程与技术实施", "icon": "🔧"},
     "xingbu": {"name": "刑部", "role": "规范与质量审查", "icon": "⚖️"},
     "bingbu": {"name": "兵部", "role": "安全与应急响应", "icon": "🛡️"},
+    "libu_hr": {"name": "吏部（人事）", "role": "人力资源管理", "icon": "👥"},
 }
 
 
 @router.get("")
 async def list_agents():
-    """列出所有可用 Agent。"""
+    """列出所有可用 Agent，含后端类型信息。"""
     agents = []
     for agent_id, meta in AGENT_META.items():
+        backend_type = await resolve_agent_backend(agent_id)
         agents.append({
             "id": agent_id,
             **meta,
+            "backend_type": backend_type or "openclaw",
         })
     return {"agents": agents}
 
@@ -42,6 +48,8 @@ async def get_agent(agent_id: str):
     if not meta:
         return {"error": f"Agent '{agent_id}' not found"}, 404
 
+    backend_type = await resolve_agent_backend(agent_id)
+
     # 尝试读取 SOUL.md
     soul_path = Path(__file__).parents[4] / "agents" / agent_id / "SOUL.md"
     soul_content = ""
@@ -51,6 +59,7 @@ async def get_agent(agent_id: str):
     return {
         "id": agent_id,
         **meta,
+        "backend_type": backend_type or "openclaw",
         "soul_preview": soul_content,
     }
 
