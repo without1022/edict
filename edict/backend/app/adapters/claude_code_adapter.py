@@ -77,7 +77,8 @@ class ClaudeCodeAdapter(AgentAdapter):
         cmd = [
             claude_bin,
             "-p", full_prompt,
-            "--max-turns", str(self.config.extra.get("max_turns", 15)),
+            "--max-turns", str(self.config.extra.get("max_turns", 5)),
+            "--print",
         ]
 
         # 如果配置了模型，加 --model 参数
@@ -86,51 +87,63 @@ class ClaudeCodeAdapter(AgentAdapter):
 
         env = os.environ.copy()
 
-        def _run() -> dict:
-            try:
-                proc = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=self.config.timeout,
-                    env=env,
-                )
-                return {
-                    "returncode": proc.returncode,
-                    "stdout": proc.stdout[-10000:] if proc.stdout else "",
-                    "stderr": proc.stderr[-2000:] if proc.stderr else "",
-                }
-            except subprocess.TimeoutExpired:
-                return {
-                    "returncode": -1,
-                    "stdout": "",
-                    "stderr": f"TIMEOUT after {self.config.timeout}s",
-                }
-            except FileNotFoundError:
-                return {
-                    "returncode": -1,
-                    "stdout": "",
-                    "stderr": f"claude command not found: {claude_bin}",
-                }
+        log.info(f"[{agent_id}] → Claude Code CLI: {claude_bin}")
 
-        loop = asyncio.get_event_loop()
-        start = time.monotonic()
-        result = await loop.run_in_executor(None, _run)
-        elapsed = time.monotonic() - start
+        try:
+            start = time.monotonic()
+            # 通过 stdin 管道传递 prompt
+            proc = await asyncio.create_subprocess_exec(
+                claude_bin,
+                "--print",
+                "--max-turns", str(self.config.extra.get("max_turns", 5)),
+                *(("--model", self.config.model) if self.config.model else ()),
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=os.environ.copy(),
+            )
+            stdout_bytes, stderr_bytes = await asyncio.wait_for(
+                proc.communicate(input=full_prompt.encode("utf-8")),
+                timeout=self.config.timeout,
+            )
+            elapsed = time.monotonic() - start
+            stdout = stdout_bytes.decode("utf-8", errors="replace") if stdout_bytes else ""
+            stderr = stderr_bytes.decode("utf-8", errors="replace") if stderr_bytes else ""
 
-        success = result["returncode"] == 0
-        log.info(
-            f"[{agent_id}] ← Claude Code CLI rc={result['returncode']} "
-            f"in {elapsed:.1f}s"
-        )
+            success = proc.returncode == 0
+            log.info(
+                f"[{agent_id}] ← Claude Code CLI rc={proc.returncode} "
+                f"in {elapsed:.1f}s"
+            )
+            return AdapterResult(
+                success=success,
+                stdout=stdout[-10000:] if stdout else "",
+                stderr=stderr[-2000:] if stderr else "",
+                returncode=proc.returncode or 0,
+                metadata={"elapsed_s": elapsed, "command": claude_bin},
+            )
 
-        return AdapterResult(
-            success=success,
-            stdout=result.get("stdout", ""),
-            stderr=result.get("stderr", ""),
-            returncode=result["returncode"],
-            metadata={"elapsed_s": elapsed, "command": claude_bin},
-        )
+        except asyncio.TimeoutError:
+            log.warning(f"[{agent_id}] ← Claude Code CLI TIMEOUT after {self.config.timeout}s")
+            return AdapterResult(
+                success=False,
+                stderr=f"TIMEOUT after {self.config.timeout}s",
+                returncode=-1,
+            )
+        except FileNotFoundError:
+            log.error(f"[{agent_id}] ← Claude Code CLI not found: {claude_bin}")
+            return AdapterResult(
+                success=False,
+                stderr=f"claude command not found: {claude_bin}",
+                returncode=-1,
+            )
+        except Exception as e:
+            log.error(f"[{agent_id}] ← Claude Code CLI error: {e}")
+            return AdapterResult(
+                success=False,
+                stderr=f"Error: {e}",
+                returncode=-1,
+            )
 
     async def health(self) -> bool:
         """检查 claude CLI 是否可用。"""
