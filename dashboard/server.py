@@ -52,7 +52,7 @@ _DEFAULT_ORIGINS = {
 _SAFE_NAME_RE = re.compile(r'^[a-zA-Z0-9_\-\u4e00-\u9fff]+$')
 
 BASE = pathlib.Path(__file__).parent
-DIST = BASE / 'dist'          # React 构建产物 (npm run build)
+DIST = BASE.parent / 'edict/frontend/dist'  # React 构建产物 (npm run build)
 DATA = BASE.parent / "data"
 SCRIPTS = BASE.parent / 'scripts'
 _ACTIVE_TASK_DATA_DIR = None
