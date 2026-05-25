@@ -22,6 +22,7 @@ from .config import get_settings
 from .services.event_bus import get_event_bus
 from .api import tasks, agents, events, admin, websocket
 from .api import legacy
+from .adapters.registry import init_registry
 
 logging.basicConfig(
     level=logging.INFO,
@@ -39,6 +40,10 @@ async def lifespan(app: FastAPI):
     # 连接 Event Bus
     bus = await get_event_bus()
     log.info("✅ Event Bus connected")
+
+    # 初始化 Agent Registry
+    count = await init_registry()
+    log.info(f"✅ Agent Registry initialized: {count} agents")
 
     yield
 

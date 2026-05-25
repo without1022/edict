@@ -31,15 +31,26 @@ TESTS = [
         "message": "用户说：帮我看看这个项目\n请判断这是闲聊还是正式旨意？",
     },
     {
-        "name": "DeepSeek Chat (zhongshu/menxia/六部)",
+        "name": "DeepSeek V4 Flash (zhongshu/menxia/六部)",
         "adapter": OpenAIAdapter(AdapterConfig(
             type="deepseek_api",
             endpoint="https://api.deepseek.com/v1/chat/completions",
-            model="deepseek-chat",
+            model="deepseek-v4-flash",
             api_key=DEEPSEEK_KEY,
             max_tokens=200, timeout=60,
         )),
         "message": "用一句话说明：什么是三省六部制度？",
+    },
+    {
+        "name": "DeepSeek V4 Pro (xingbu/审查)",
+        "adapter": OpenAIAdapter(AdapterConfig(
+            type="deepseek_api",
+            endpoint="https://api.deepseek.com/v1/chat/completions",
+            model="deepseek-v4-pro",
+            api_key=DEEPSEEK_KEY,
+            max_tokens=200, timeout=60,
+        )),
+        "message": "审查这段代码的风险：print(exec(input()))",
     },
 ]
 
